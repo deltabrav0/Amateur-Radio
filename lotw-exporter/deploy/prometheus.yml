@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'lotw'
+    scrape_interval: 1m # Exporter caches, so frequently scraping is just reading cache, cheap.
+    static_configs:
+      - targets: ['lotw-exporter:8080']
