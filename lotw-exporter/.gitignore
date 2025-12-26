@@ -1,0 +1,14 @@
+# Binaries
+lotw-exporter
+cmd/lotw-exporter/lotw-exporter
+
+# Credentials
+.env
+deploy/.env
+
+# Local Data
+deploy/prometheus_data/
+deploy/grafana_data/
+
+# OS Files
+.DS_Store

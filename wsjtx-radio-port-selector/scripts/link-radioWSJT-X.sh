@@ -45,39 +45,77 @@ EOF
     open "$APP"
 }
 
-# ----- Detect newest Silicon Labs port -----
-PORT=$(ls -t /dev/cu.SLAB_USBtoUART* 2>/dev/null | head -n 1 || true)
+# ======================================================================
+#   NEW PORT DETECTION (rigctl validates the actual working radio port)
+# ======================================================================
 
-if [[ -n "${PORT:-}" ]]; then
-    echo "Found port: $PORT"
-    ln -sf "$PORT" "$LINK"
-    echo "Updated symlink: $LINK → $PORT"
+RIGCTL=${RIGCTL:-"rigctl"}
+RIGCTLOPT=${RIGCTLOPT:-"/opt/homebrew/bin/rigctl"}
+SLAB="SLAB"
 
-    # Update WSJT-X.ini if it exists
-    if [[ -f "$INI" ]]; then
-        echo "Updating CATSerialPort in $INI"
+# Hamlib ID for your radio (verified by your rigctl tests)
+HAMLIBID=1042
 
-        if grep -q '^CATSerialPort=' "$INI"; then
-            sed -i '' "s|^CATSerialPort=.*|CATSerialPort=$LINK|" "$INI"
-        else
-            if grep -q '^\[Rig\]' "$INI"; then
-                awk -v v="CATSerialPort=$LINK" '
-                    $0=="[Rig]" { print; print v; next }
-                    { print }
-                ' "$INI" > "$INI.tmp" && mv "$INI.tmp" "$INI"
-            else
-                echo "CATSerialPort=$LINK" >> "$INI"
-            fi
-        fi
+# Locate rigctl
+RIGCTLCMD=$(which "$RIGCTL" 2>/dev/null || true)
+if [[ -z "$RIGCTLCMD" && -f "$RIGCTLOPT" ]]; then
+    RIGCTLCMD="$RIGCTLOPT"
+fi
 
-        echo "WSJT-X CATSerialPort updated → $LINK"
+if [[ -z "$RIGCTLCMD" ]]; then
+    echo "Error: hamlib rigctl not installed. Install via brew and try again."
+    exit 1
+fi
 
-        # Restart wsjtx-improved
-        restart_wsjt
-    else
-        echo "WSJT-X.ini not found, skipping update and restart."
+echo "Using rigctl: $RIGCTLCMD"
+
+shopt -s nullglob
+
+PORT=""
+echo "Probing Silicon Labs ports..."
+
+for f in /dev/cu.*$SLAB* /dev/tty.*$SLAB*; do
+    echo " - Testing $f ..."
+    if "$RIGCTLCMD" -m "$HAMLIBID" -r "$f" _ >/dev/null 2>&1; then
+        echo " --> Success: rigctl can communicate via $f"
+        PORT="$f"
+        break
     fi
-else
-    echo "No SLAB USB devices found. Removing stale symlink."
+done
+
+if [[ -z "$PORT" ]]; then
+    echo "No functioning SLAB USB ports detected. Removing stale symlink."
     rm -f "$LINK"
+    exit 1
+fi
+
+echo "Detected working CAT port: $PORT"
+
+# ======================================================================
+#   Create symlink & update WSJT-X.ini
+# ======================================================================
+
+ln -sf "$PORT" "$LINK"
+echo "Updated symlink: $LINK → $PORT"
+
+if [[ -f "$INI" ]]; then
+    echo "Updating CATSerialPort in $INI"
+
+    if grep -q '^CATSerialPort=' "$INI"; then
+        sed -i '' "s|^CATSerialPort=.*|CATSerialPort=$LINK|" "$INI"
+    else
+        if grep -q '^\[Rig\]' "$INI"; then
+            awk -v v="CATSerialPort=$LINK" '
+                $0=="[Rig]" { print; print v; next }
+                { print }
+            ' "$INI" > "$INI.tmp" && mv "$INI.tmp" "$INI"
+        else
+            echo "CATSerialPort=$LINK" >> "$INI"
+        fi
+    fi
+
+    echo "WSJT-X CATSerialPort updated → $LINK"
+    restart_wsjt
+else
+    echo "WSJT-X.ini not found, skipping update and restart."
 fi

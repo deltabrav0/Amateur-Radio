@@ -1,40 +1,137 @@
-# WSJT-X Radio Port Selector
+# WSJT-X Radio Port Selector  
+Automatically Fix WSJT-X CAT Port Detection on macOS
 
-# WSJT-X Radio Port Selector
+![badge](https://img.shields.io/badge/platform-macOS-blue)
+![badge](https://img.shields.io/badge/status-stable-brightgreen)
+![badge](https://img.shields.io/badge/license-MIT-lightgrey)
 
-This tool automatically:
+---
 
-- Detects the newest Silicon Labs USB UART device  
-- Updates a stable symlink at `/usr/local/serial/radio`  
-- Updates `CATSerialPort=` in `~/Library/Preferences/WSJT-X.ini`  
-- Restarts `wsjtx-improved`  
-- Provides a macOS launcher app (`WSJT-X-fixed.app`) you can run from Spotlight
+## 📡 Overview
 
+On macOS, Silicon Labs USB-to-UART adapters frequently enumerate as:
 
-Includes:
+```
+/dev/cu.SLAB_USBtoUART
+/dev/cu.SLAB_USBtoUART4
+/dev/cu.SLAB_USBtoUART9
+```
 
-- Shell script (`link-radioWSJT-X.sh`)
-- macOS launcher app (`Update Radio Port.app`)
-- Optional installer script
+This creates a problem for rigs and digital‑mode software like WSJT‑X or wsjtx‑improved:  
+**the port keeps changing**, and WSJT‑X stops communicating with the radio.
 
-## Requirements
+This tool resolves the problem automatically.
 
-- macOS
-- wsjtx-improved installed in `/Applications`
-- Silicon Labs USB UART driver
+---
 
-## Installation
+## ✨ What This Tool Does
 
-Clone the repo:
+Every time you run the launcher:
+
+1. **Detects the newest Silicon Labs UART device**
+2. **Creates a stable symlink:**
+
+```
+/usr/local/serial/radio → /dev/cu.SLAB_USBtoUART*
+```
+
+3. **Updates `CATSerialPort=` inside:**  
+   `~/Library/Preferences/WSJT-X.ini`
+4. **Gracefully quits and restarts `wsjtx-improved`**
+5. Ships with a clickable macOS app:  
+   **WSJT-X-fixed.app**  
+   (Spotlight searchable, sits in `/Applications`)
+
+---
+
+## 🛠 Installation
+
+Clone the repository:
 
 ```bash
-git clone https://github.com/YOURNAME/wsjtx-radio-port-selector.git
+git clone https://github.com/REPLACEME/wsjtx-radio-port-selector.git
 cd wsjtx-radio-port-selector
+```
+
+Run the installer:
+
+```bash
 ./install/install.sh
+```
 
-## Usage
-Launch the app
-```WSJT-X-fixed
+This installs:
 
-Or run manually 
+- `/usr/local/bin/link-radioWSJT-X.sh`
+- `/Applications/WSJT-X-fixed.app`
+
+---
+
+## ▶️ Usage
+
+Launch via Spotlight:
+
+```
+WSJT-X-fixed
+```
+
+Or run manually:
+
+```bash
 link-radioWSJT-X.sh
+```
+
+---
+
+## 📦 Repository Contents
+
+```
+scripts/
+    link-radioWSJT-X.sh      # Main script that fixes the port
+
+app/
+    WSJT-X-fixed.app/        # macOS launcher
+
+install/
+    install.sh               # Installer
+    uninstall.sh             # Clean removal
+```
+
+---
+
+## 🔧 Requirements
+
+- macOS 12+
+- hamlib which provides rigctl.  can be installed with homebrew (brew install
+  hamlib)
+- `wsjtx-improved.app` installed in `/Applications`
+- Silicon Labs USB UART driver
+
+---
+
+## 🧪 Testing
+
+You can simulate a device reattach by running:
+
+```bash
+ls -ltr /dev/cu.SLAB_USBtoUART*
+```
+
+Then launch the app and verify WSJT-X switches to:
+
+```
+CATSerialPort=/usr/local/serial/radio
+```
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License — see `LICENSE` for details.
+
+---
+
+## 🙌 Credits
+
+Developed by **Dan Butler (K5SUB)**  
+Project assistance by **TARS**.
+

@@ -46,7 +46,7 @@ nano .env
 Copy-Item .env.example .env
 notepad .env
 ```
-
+.en
 **Edit the `.env` file**:
 ```ini
 LOTW_USERNAME=YourCallsign
@@ -74,6 +74,10 @@ docker compose up -d
 
 - **Initial Load**: On the first start, the exporter effectively performs a "Full Import", downloading all your records from LoTW. This ensures your stats are complete from day one.
 - **Recurring**: It will check for new records every hour (configurable via `FETCH_INTERVAL`).
+- **Manual Reload**: You can force an immediate update by sending a POST request to the reload endpoint:
+  ```bash
+  curl -X POST http://localhost:8080/reload
+  ```
 - **Data Persistence**: Data is stored in Docker volumes (`prometheus_data`, `grafana_data`), so your history is safe even if you restart containers.
 
 ## Troubleshooting
